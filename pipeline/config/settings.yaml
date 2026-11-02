@@ -3,6 +3,7 @@
 
 seasons:
   first: "1415"          # first season of history (Understat + football-data)
+  shots_first: "1415"    # first season of shot-level data used for xG training
   current: "2627"
   db_window: 3           # seasons kept in Supabase (current + 2 previous)
   backtest: ["2324", "2425", "2526"]
@@ -14,36 +15,72 @@ scraping:
   # Requests per minute, per source. Requests are throttled AND cached.
   rate_limits_per_min:
     football_data: 20
-    understat: 20
+    understat: 30
     clubelo: 30
     fbref: 10
   max_retries: 3
   backoff_seconds: 5
-  user_agent: "PitchIQ-portfolio-bot (+https://github.com/NiKeT972/top5-football-analytics)"
-  fbref_refresh_days: 7  # FBref is low-value + fragile: refresh weekly only
+  timeout_s: 30
+  user_agent: "PitchIQ-portfolio-bot/0.1 (+https://github.com/NiKeT972/top5-football-analytics)"
+  current_season_max_age_hours: 6   # re-fetch current-season league pages after this
+  fixtures_max_age_hours: 6
+  fbref_refresh_days: 7             # FBref is low-value + fragile: refresh weekly only
+  fbref_enabled: true
+  # Cap on per-match Understat requests in one run (backfill runs in chunks;
+  # 8000 requests at 30/min is ~4.5 h, inside GitHub's 6 h job limit).
+  max_match_requests_per_run: 8000
 
 validation:
   max_goals_per_team: 15
   max_xg_per_shot: 1.0
   max_shots_per_team: 60
-  fixture_date_tolerance_days: 1   # football-data vs Understat kickoff date join
+  fixture_date_tolerance_days: 2    # football-data vs Understat kickoff date join
+  min_team_match_score: 0.35        # below this a cross-source team match needs an alias
+  max_score_mismatches: 0           # finished matches whose score differs between sources
 
 xg:
   pitch_length_m: 105.0
   pitch_width_m: 68.0
   goal_width_m: 7.32
   holdout_seasons: ["2425", "2526"]
+  backtest_train_last_season: "2223"  # xG model used for predictor backtest features
+  min_category_count: 200             # rarer last_action values are grouped as "Other"
   random_seed: 42
+  calibration_bins: 20
+  lgbm:
+    n_estimators: 2000
+    learning_rate: 0.03
+    num_leaves: 31
+    min_child_samples: 200
+    subsample: 0.8
+    subsample_freq: 1
+    colsample_bytree: 0.8
+    reg_lambda: 1.0
+    early_stopping_rounds: 100
 
 predictor:
   dixon_coles:
     time_decay_xi_per_day: 0.0019   # tune: weight = exp(-xi * days_ago)
-    max_goals: 8                    # score grid is 0..max_goals
-    min_matches_history: 380
+    max_goals: 10                   # score grid is 0..max_goals
+    history_days: 1095              # matches older than this are ignored
+    ridge: 0.05                     # L2 shrinkage of attack/defence toward their prior
+    refit_every_days: 7             # walk-forward refit cadence
   gbm:
     rolling_window_matches: 10
+    form_window_matches: 5
     random_seed: 42
-  snapshot_days_before_kickoff: 7
+    params:
+      n_estimators: 400
+      learning_rate: 0.02
+      num_leaves: 15
+      min_child_samples: 80
+      subsample: 0.8
+      subsample_freq: 1
+      colsample_bytree: 0.8
+      reg_lambda: 2.0
+  ensemble_weight_grid: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  horizon_days: 8                   # predict fixtures kicking off within this many days
+  calibration_bins: 10
 
 xpts:
   n_sims: 10000
@@ -53,10 +90,10 @@ similarity:
   min_minutes: 900
   pca_variance_kept: 0.9
   n_neighbours: 10
-  player_match_score_cutoff: 88    # rapidfuzz score to auto-accept a cross-source player match
+  player_match_score_cutoff: 85     # rapidfuzz WRatio to auto-accept a cross-source player match
+  features: [npxg, xa, shots, key_passes, xg_chain, xg_buildup, np_goals, assists, npxg_per_shot]
+  embedding_dim: 9                  # pgvector dimension (PCA output is zero-padded to this)
 
 database:
-  max_size_mb: 350                 # pipeline fails above this (free tier limit is 500)
-  ask_row_limit: 200
-  ask_statement_timeout_ms: 5000
-  ask_daily_request_cap: 300
+  max_size_mb: 350                  # pipeline fails above this (free tier limit is 500)
+  upsert_batch_rows: 5000
