@@ -17,7 +17,7 @@ def test_ligue1_team_count_history():
 def test_settings_load():
     s = load_settings()
     assert s.seasons.current == "2627"
-    assert s.xpts["n_sims"] > 0
+    assert s.xpts.n_sims > 0
 
 
 def test_season_range():

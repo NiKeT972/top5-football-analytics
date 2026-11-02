@@ -1,4 +1,34 @@
-# Manual overrides for team names that soccerdata's uniform naming misses.
-# Format: canonical_team_id: [alias, alias, ...]
-# Filled in during Phase 1; a test asserts every source name maps to a team_id.
-aliases: {}
+# Manual name aliases, keyed by the Understat team name.
+# Matching is an optimal assignment over fuzzy scores within each league-season, so
+# aliases are only needed where names share almost no characters. Every run reports
+# the lowest match scores; add an alias here if validation flags one.
+aliases:
+  Athletic Club: [Ath Bilbao, Bilbao]
+  Atletico Madrid: [Ath Madrid, Atletico]
+  Manchester United: [Man United]
+  Manchester City: [Man City]
+  Nottingham Forest: ["Nott'm Forest", Forest]
+  Wolverhampton Wanderers: [Wolves]
+  Queens Park Rangers: [QPR]
+  West Bromwich Albion: [West Brom]
+  Newcastle United: [Newcastle]
+  Borussia M.Gladbach: ["M'gladbach", Gladbach]
+  RasenBallsport Leipzig: [RB Leipzig, RBLeipzig]
+  FC Cologne: [FC Koln, Koeln]
+  Eintracht Frankfurt: [Ein Frankfurt, Frankfurt]
+  Fortuna Duesseldorf: [Fortuna Dusseldorf, Duesseldorf]
+  Greuther Fuerth: [Greuther Furth, Fuerth]
+  Nuernberg: [Nurnberg]
+  Paris Saint Germain: [Paris SG, PSG]
+  Saint-Etienne: [St Etienne]
+  Espanyol: [Espanol]
+  Deportivo La Coruna: [La Coruna, Depor]
+  Sporting Gijon: [Sp Gijon, Gijon]
+  Real Betis: [Betis]
+  Real Sociedad: [Sociedad]
+  Celta Vigo: [Celta]
+  Rayo Vallecano: [Vallecano]
+  AC Milan: [Milan]
+  Inter: [Internazionale]
+  Parma Calcio 1913: [Parma]
+  SPAL 2013: [Spal]

@@ -1,0 +1,25 @@
+# Understat match positions -> position groups used for comparisons and radars.
+# "Sub" appearances carry no positional information and are ignored.
+match_position_groups:
+  GK: GK
+  DC: DEF
+  DL: DEF
+  DR: DEF
+  DMC: CM
+  DML: CM
+  DMR: CM
+  MC: CM
+  ML: AMW
+  MR: AMW
+  AMC: AMW
+  AML: AMW
+  AMR: AMW
+  FW: FW
+  FWL: FW
+  FWR: FW
+# Fallback when no match-level positions exist: first token of Understat's season position.
+season_position_groups:
+  GK: GK
+  D: DEF
+  M: CM
+  F: FW
