@@ -61,8 +61,12 @@ def synthetic_shots(n_per_season=6000, seasons=("1415", "1516", "1617"), seed=0)
                 p = 0.76 if pen else 1 / (1 + np.exp(-(1.2 - 0.17 * dist - 0.8 * head)))
                 rows.append(
                     {
-                        "shot_id": sid, "match_id": mid, "side": "h" if rng.random() < 0.5 else "a",
-                        "minute": int(rng.integers(1, 90)), "x": x, "y": y,
+                        "shot_id": sid,
+                        "match_id": mid,
+                        "side": "h" if rng.random() < 0.5 else "a",
+                        "minute": int(rng.integers(1, 90)),
+                        "x": x,
+                        "y": y,
                         "xg_us": float(np.clip(p + rng.normal(0, 0.02), 0.001, 0.99)),
                         "result": "Goal" if rng.random() < p else "MissedShots",
                         "situation": "Penalty" if pen else "OpenPlay",
@@ -88,7 +92,9 @@ def test_train_evaluate_and_score(tmp_path):
     lgbm = summary["results"]["LightGBM"]["non_penalty"]
     assert lgbm["auc"] > 0.7
     # the generating process is logistic in distance: models should be close to the truth proxy
-    assert abs(lgbm["log_loss"] - summary["results"]["Understat xG"]["non_penalty"]["log_loss"]) < 0.02
+    assert (
+        abs(lgbm["log_loss"] - summary["results"]["Understat xG"]["non_penalty"]["log_loss"]) < 0.02
+    )
     assert summary["penalty_xg"] == pytest.approx(0.76, abs=0.1)
     assert (tmp_path / "reports" / "xg_report.md").exists()
     scored = score_all(store)

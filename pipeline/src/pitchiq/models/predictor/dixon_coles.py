@@ -30,6 +30,7 @@ RHO_BOUNDS = (-0.25, 0.25)
 HOME_BOUNDS = (-1.0, 1.0)
 STRENGTH_BOUNDS = (-3.0, 3.0)
 EPS = 1e-10
+DEFAULT_HOME, DEFAULT_RHO = 0.25, -0.05  # optimiser starting point / no-history fallback
 SECONDS_PER_DAY = 86400.0
 
 
@@ -53,7 +54,7 @@ class DCFit:
         return self.priors.get(team, (0.0, 0.0))
 
     def rates(self, home_team: str, away_team: str) -> tuple[float, float]:
-        """Expected goals (lambda, mu) for a fixture."""
+        """Return expected goals (lambda, mu) for a fixture."""
         ah, dh = self.strengths(home_team)
         aa, da = self.strengths(away_team)
         return float(np.exp(self.home + ah + da)), float(np.exp(aa + dh))
@@ -76,7 +77,9 @@ def tau_matrix(lam: float, mu: float, rho: float, max_goals: int) -> np.ndarray:
 
 def score_grid(lam: float, mu: float, rho: float, max_goals: int) -> np.ndarray:
     """Normalised score probability grid."""
-    g = np.outer(poisson.pmf(np.arange(max_goals + 1), lam), poisson.pmf(np.arange(max_goals + 1), mu))
+    g = np.outer(
+        poisson.pmf(np.arange(max_goals + 1), lam), poisson.pmf(np.arange(max_goals + 1), mu)
+    )
     g = g * tau_matrix(lam, mu, rho, max_goals)
     return g / g.sum()
 
@@ -157,6 +160,7 @@ def fit(
         cfg: Model settings.
         priors: ``{team_id: (attack, defence)}`` prior means (default 0).
         teams: Teams to include even without history in the window (e.g. promoted sides).
+
     """
     priors = priors or {}
     hist = matches[(matches["kickoff_utc"] < as_of) & matches["home_goals"].notna()]
@@ -164,16 +168,21 @@ def fit(
     keep = age_days <= cfg.history_days
     hist, age_days = hist[keep], age_days[keep]
     names = sorted(set(hist["home_team_id"]) | set(hist["away_team_id"]) | set(teams or []))
+    if hist.empty:
+        # No history in the window: every team sits at its prior.
+        pa = np.array([priors.get(t, (0.0, 0.0))[0] for t in names])
+        pd_ = np.array([priors.get(t, (0.0, 0.0))[1] for t in names])
+        return DCFit(names, pa, pd_, DEFAULT_HOME, 0.0, as_of, priors)
     idx = {t: i for i, t in enumerate(names)}
     n = len(names)
     prior_att = np.array([priors.get(t, (0.0, 0.0))[0] for t in names])
     prior_def = np.array([priors.get(t, (0.0, 0.0))[1] for t in names])
-    hi = hist["home_team_id"].map(idx).to_numpy()
-    ai = hist["away_team_id"].map(idx).to_numpy()
+    hi = hist["home_team_id"].map(idx).to_numpy(dtype=np.int64)
+    ai = hist["away_team_id"].map(idx).to_numpy(dtype=np.int64)
     x = hist["home_goals"].astype(int).to_numpy()
     y = hist["away_goals"].astype(int).to_numpy()
     w = np.exp(-cfg.time_decay_xi_per_day * age_days)
-    x0 = np.concatenate([prior_att, prior_def, [0.25, -0.05]])
+    x0 = np.concatenate([prior_att, prior_def, [DEFAULT_HOME, DEFAULT_RHO]])
     bounds = [STRENGTH_BOUNDS] * (2 * n) + [HOME_BOUNDS, RHO_BOUNDS]
     res = minimize(
         _nll_and_grad,

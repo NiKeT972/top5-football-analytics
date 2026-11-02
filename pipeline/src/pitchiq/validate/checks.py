@@ -152,6 +152,11 @@ def _league_shape_checks(
     store: Store, leagues: LeaguesConfig, settings: Settings, report: Report
 ) -> None:
     m = store.read("matches")
+    if m.empty:
+        report.add(
+            "league-seasons have n teams and n(n-1) fixtures", False, detail="no matches stored"
+        )
+        return
     bad = []
     for (league_id, season_id), g in m.groupby(["league_id", "season_id"]):
         n = leagues.get(league_id).teams_in_season(season_id)
@@ -176,7 +181,7 @@ def _league_shape_checks(
 def _shots_vs_score(store: Store, report: Report) -> None:
     """Goals recorded as shots must add up to the final score (own goals handled separately)."""
     shots, m = store.read("shots"), store.read("matches")
-    if shots.empty:
+    if shots.empty or m.empty:
         return
     fin = m[m["status"] == "finished"].set_index("match_id")
     goals = (
@@ -222,7 +227,9 @@ def validate_all(store: Store, settings: Settings, leagues: LeaguesConfig) -> Re
         )
     teams = store.read("teams")
     m = store.read("matches")
-    unknown = set(m["home_team_id"]) - set(teams["team_id"]) if not m.empty else set()
+    unknown = (
+        set(m["home_team_id"]) - set(teams["team_id"]) if not (m.empty or teams.empty) else set()
+    )
     report.add("every match team has a canonical id", not unknown, detail=str(sorted(unknown)[:5]))
     store.write_json("validation_report.json", [c.__dict__ for c in report.checks])
     if report.failed_hard:

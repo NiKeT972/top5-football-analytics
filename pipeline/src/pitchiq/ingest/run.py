@@ -111,12 +111,23 @@ class Ingestor:
     def run(self, *, details: bool = True, max_match_requests: int | None = None) -> IngestResult:
         """Run all sources. ``details`` fetches per-match shots/lineups (the slow part)."""
         statuses = [_timed(SourceStatus("understat_league"), self.ingest_understat_leagues)]
+        have_matches = self.store.exists("matches")
+        dependent: list[tuple[SourceStatus, Callable[[], None]]] = []
         if details:
             budget = max_match_requests or self.settings.scraping.max_match_requests_per_run
             st = SourceStatus("understat_matches")
-            statuses.append(_timed(st, lambda: self.ingest_understat_matches(budget, st)))
-        statuses.append(_timed(SourceStatus("football_data"), self.ingest_football_data))
-        statuses.append(_timed(SourceStatus("clubelo"), self.ingest_clubelo))
+            dependent.append((st, lambda: self.ingest_understat_matches(budget, st)))
+        dependent.append((SourceStatus("football_data"), self.ingest_football_data))
+        dependent.append((SourceStatus("clubelo"), self.ingest_clubelo))
+        for status, fn in dependent:
+            if not have_matches:
+                status.ok = False
+                status.message = (
+                    "skipped: no Understat fixtures stored yet (team mapping needs them)"
+                )
+                statuses.append(status)
+            else:
+                statuses.append(_timed(status, fn))
         requests = {name: client.n_requests for name, client in self.clients.items()}
         log.info("HTTP requests this run: %s", requests)
         return IngestResult(statuses, requests)
@@ -387,18 +398,28 @@ class Ingestor:
 
     # ------------------------------------------------------------------ ClubElo
     def ingest_clubelo(self) -> None:
-        """Map ClubElo club names to teams per league-season, then pull each club's history."""
+        """Map ClubElo club names to teams per league-season, then pull each club's history.
+
+        Individual failed requests do not discard the rest: whatever was fetched is merged
+        with the previously stored ratings, and the step still fails at the end so the run
+        is flagged.
+        """
         http = self.clients["clubelo"]
-        mappings = []
+        errors: list[str] = []
+        mappings = [self.store.read("team_source_names_elo")]
         for lg in self.leagues.leagues:
             for season_id in self.seasons():
                 snap_day = min(
                     date(season_start_year(season_id), ELO_SNAPSHOT_MONTH, ELO_SNAPSHOT_DAY),
                     self.today - timedelta(days=1),
                 )
-                clubs = clubelo.parse_snapshot(
-                    clubelo.fetch_snapshot(http, snap_day), lg.sources.clubelo_country
-                )
+                try:
+                    clubs = clubelo.parse_snapshot(
+                        clubelo.fetch_snapshot(http, snap_day), lg.sources.clubelo_country
+                    )
+                except SourceError as exc:
+                    errors.append(str(exc))
+                    continue
                 targets = self._targets(lg.league_id, season_id)
                 if clubs.empty or not targets:
                     continue
@@ -409,21 +430,31 @@ class Ingestor:
                     m for m in matched if m.score >= self.settings.validation.min_team_match_score
                 ]
                 mappings.append(mapping_frame(matched, "clubelo", lg.league_id, season_id))
-        mp = pd.concat(mappings, ignore_index=True)
+        mp = pd.concat([m for m in mappings if not m.empty], ignore_index=True).drop_duplicates(
+            ["league_id", "season_id", "source_name"], keep="last"
+        )
         self.store.write("team_source_names_elo", mp)
 
         current_teams = set(mp.loc[mp["season_id"] == self.settings.seasons.current, "team_id"])
         first_day = date(season_start_year(self.settings.seasons.first), 7, 1)
-        frames = []
+        frames = [self.store.read("elo")]
         for (club, team_id), _ in mp.groupby(["source_name", "team_id"]):
             max_age = HOURS_PER_DAY - 4 if team_id in current_teams else 24 * 365 * 10
-            hist = clubelo.parse_history(clubelo.fetch_history(http, club, max_age))
+            try:
+                hist = clubelo.parse_history(clubelo.fetch_history(http, club, max_age))
+            except SourceError as exc:
+                errors.append(str(exc))
+                continue
             hist = hist[hist["valid_to"] >= first_day]
             frames.append(hist.assign(team_id=team_id))
-        elo = pd.concat(frames, ignore_index=True).drop_duplicates(
-            ["team_id", "valid_from"], keep="last"
-        )
-        self.store.write("elo", elo[["team_id", "club", "valid_from", "valid_to", "elo"]])
+        frames = [f for f in frames if not f.empty]
+        if frames:
+            elo = pd.concat(frames, ignore_index=True).drop_duplicates(
+                ["team_id", "valid_from"], keep="last"
+            )
+            self.store.write("elo", elo[["team_id", "club", "valid_from", "valid_to", "elo"]])
+        if errors:
+            raise SourceError("clubelo", f"{len(errors)} requests", "; ".join(errors[:3]))
 
 
 def _odds_long(df: pd.DataFrame, kinds: tuple[str, ...]) -> pd.DataFrame:

@@ -82,3 +82,34 @@ def test_incremental_run_fetches_no_finished_match_twice(ingested, cfg, world):
     }
     Ingestor(store, settings, leagues, clients=clients, now=pd.Timestamp(TODAY, tz="UTC")).run()
     assert not [u for u in clients["understat"].urls if "getMatchData" in u]
+
+
+def test_failed_understat_skips_dependents_and_validation_fails_cleanly(tmp_path, cfg, world):
+    from pitchiq.http import SourceError
+    from pitchiq.ingest.run import Ingestor
+    from pitchiq.storage.parquet import Store
+    from pitchiq.validate.checks import ValidationFailed
+    from tests.fakeworld import TODAY, FakeHTTP
+
+    class Down(FakeHTTP):
+        def get(self, url, **kw):
+            if "understat" in url:
+                raise SourceError("understat", url, "ConnectTimeout")
+            return super().get(url, **kw)
+
+    settings, leagues = cfg
+    store = Store(tmp_path)
+    clients = {
+        src: Down(src, world, store.raw) for src in ("understat", "football_data", "clubelo")
+    }
+    result = Ingestor(
+        store, settings, leagues, clients=clients, now=pd.Timestamp(TODAY, tz="UTC")
+    ).run()
+    assert not result.ok
+    assert all("skipped" in s.message for s in result.statuses[1:])
+    try:
+        validate_all(store, settings, leagues)
+    except ValidationFailed:
+        pass
+    else:
+        raise AssertionError("validation should fail without matches")
