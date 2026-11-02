@@ -1,0 +1,4 @@
+# Manual overrides for team names that soccerdata's uniform naming misses.
+# Format: canonical_team_id: [alias, alias, ...]
+# Filled in during Phase 1; a test asserts every source name maps to a team_id.
+aliases: {}
