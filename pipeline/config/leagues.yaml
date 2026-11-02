@@ -1,0 +1,64 @@
+# Canonical league definitions and each source's identifier for them.
+# n_teams is used by validation (every team must play 2 * (n_teams - 1) matches).
+leagues:
+  - league_id: ENG1
+    name: Premier League
+    country: England
+    n_teams: 20
+    sources:
+      soccerdata: ENG-Premier League
+      football_data: E0
+      understat: EPL
+      clubelo_country: ENG
+      fbref_comp_id: 9
+  - league_id: ESP1
+    name: La Liga
+    country: Spain
+    n_teams: 20
+    sources:
+      soccerdata: ESP-La Liga
+      football_data: SP1
+      understat: La_liga
+      clubelo_country: ESP
+      fbref_comp_id: 12
+  - league_id: GER1
+    name: Bundesliga
+    country: Germany
+    n_teams: 18
+    sources:
+      soccerdata: GER-Bundesliga
+      football_data: D1
+      understat: Bundesliga
+      clubelo_country: GER
+      fbref_comp_id: 20
+  - league_id: ITA1
+    name: Serie A
+    country: Italy
+    n_teams: 20
+    sources:
+      soccerdata: ITA-Serie A
+      football_data: I1
+      understat: Serie_A
+      clubelo_country: ITA
+      fbref_comp_id: 11
+  - league_id: FRA1
+    name: Ligue 1
+    country: France
+    # Ligue 1 has had 18 teams since 2023/24; earlier seasons had 20.
+    n_teams: 18
+    n_teams_history:
+      "1415": 20
+      "1516": 20
+      "1617": 20
+      "1718": 20
+      "1819": 20
+      "1920": 20
+      "2021": 20
+      "2122": 20
+      "2223": 20
+    sources:
+      soccerdata: FRA-Ligue 1
+      football_data: F1
+      understat: Ligue_1
+      clubelo_country: FRA
+      fbref_comp_id: 13

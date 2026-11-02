@@ -1,0 +1,62 @@
+# Every tunable number lives here. Values marked "tune" are starting points
+# that later phases tune by backtest and record in model_runs.params.
+
+seasons:
+  first: "1415"          # first season of history (Understat + football-data)
+  current: "2627"
+  db_window: 3           # seasons kept in Supabase (current + 2 previous)
+  backtest: ["2324", "2425", "2526"]
+
+timezone:
+  display: Asia/Kolkata
+
+scraping:
+  # Requests per minute, per source. Requests are throttled AND cached.
+  rate_limits_per_min:
+    football_data: 20
+    understat: 20
+    clubelo: 30
+    fbref: 10
+  max_retries: 3
+  backoff_seconds: 5
+  user_agent: "PitchIQ-portfolio-bot (+https://github.com/NiKeT972/top5-football-analytics)"
+  fbref_refresh_days: 7  # FBref is low-value + fragile: refresh weekly only
+
+validation:
+  max_goals_per_team: 15
+  max_xg_per_shot: 1.0
+  max_shots_per_team: 60
+  fixture_date_tolerance_days: 1   # football-data vs Understat kickoff date join
+
+xg:
+  pitch_length_m: 105.0
+  pitch_width_m: 68.0
+  goal_width_m: 7.32
+  holdout_seasons: ["2425", "2526"]
+  random_seed: 42
+
+predictor:
+  dixon_coles:
+    time_decay_xi_per_day: 0.0019   # tune: weight = exp(-xi * days_ago)
+    max_goals: 8                    # score grid is 0..max_goals
+    min_matches_history: 380
+  gbm:
+    rolling_window_matches: 10
+    random_seed: 42
+  snapshot_days_before_kickoff: 7
+
+xpts:
+  n_sims: 10000
+  random_seed: 42
+
+similarity:
+  min_minutes: 900
+  pca_variance_kept: 0.9
+  n_neighbours: 10
+  player_match_score_cutoff: 88    # rapidfuzz score to auto-accept a cross-source player match
+
+database:
+  max_size_mb: 350                 # pipeline fails above this (free tier limit is 500)
+  ask_row_limit: 200
+  ask_statement_timeout_ms: 5000
+  ask_daily_request_cap: 300
