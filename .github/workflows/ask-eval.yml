@@ -1,0 +1,39 @@
+name: Ask agent evaluation
+
+# Manual: runs the 30-question evaluation against the live database and LLM, uploads the report.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: web
+    env:
+      ASK_EVAL: "1"
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'google' }}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx vitest run --config vitest.eval.config.ts
+      - run: cat eval/report.md >> "$GITHUB_STEP_SUMMARY"
+        if: ${{ always() }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: ask-eval-report
+          path: web/eval/report.md

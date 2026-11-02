@@ -9,8 +9,19 @@ permissions:
 
 jobs:
   pipeline:
-    name: Pipeline (ruff + pytest)
+    name: Pipeline (ruff + pytest + Postgres integration)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PITCHIQ_TEST_PG_DSN: postgresql://postgres:postgres@localhost:5432/postgres
+      UV_SYSTEM_CERTS: "1"
     defaults:
       run:
         working-directory: pipeline
@@ -27,4 +38,22 @@ jobs:
           uv run ruff format --check .
       - name: Test
         run: uv run pytest -q
-  # Web lint + tests (eslint, vitest) are added in Phase 6.
+
+  web:
+    name: Web (eslint + typecheck + vitest + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
