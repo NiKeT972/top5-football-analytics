@@ -54,7 +54,9 @@ def game_state(shots: pd.DataFrame) -> pd.Series:
     h_before = g["hg"].cumsum() - home_goal
     a_before = g["ag"].cumsum() - away_goal
     diff = np.where(s["side"] == "h", h_before - a_before, a_before - h_before)
-    return pd.Series(np.clip(diff, -GAME_STATE_CLIP, GAME_STATE_CLIP), index=s.index).reindex(shots.index)
+    return pd.Series(np.clip(diff, -GAME_STATE_CLIP, GAME_STATE_CLIP), index=s.index).reindex(
+        shots.index
+    )
 
 
 def frequent_categories(values: pd.Series, min_count: int) -> list[str]:
@@ -70,6 +72,7 @@ def build_features(shots: pd.DataFrame, cfg: XGSettings, last_actions: list[str]
         shots: Shots with ``x, y, minute, situation, shot_type, last_action, result, side, match_id, shot_id``.
         cfg: xG settings.
         last_actions: Allowed ``last_action`` categories (from training data).
+
     """
     geo = geometry(shots["x"], shots["y"], cfg)
     feats = pd.DataFrame(index=shots.index)

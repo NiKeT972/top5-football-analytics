@@ -13,9 +13,12 @@ from pitchiq.features.match_features import FEATURES
 
 def fit(train: pd.DataFrame, cfg: GBMSettings) -> lgb.LGBMClassifier:
     """Fit on finished matches with features."""
-    t = train[train["status"] == "finished"].dropna(subset=["elo_diff"])
+    # LightGBM handles missing values natively (e.g. Elo during a ClubElo outage).
+    t = train[train["status"] == "finished"]
     y = outcome_index(t["home_goals"], t["away_goals"])
-    model = lgb.LGBMClassifier(objective="multiclass", num_class=3, random_state=cfg.random_seed, verbose=-1, **cfg.params)
+    model = lgb.LGBMClassifier(
+        objective="multiclass", num_class=3, random_state=cfg.random_seed, verbose=-1, **cfg.params
+    )
     model.fit(t[FEATURES], y)
     return model
 

@@ -15,7 +15,7 @@ def simulate_league(n_teams=10, n_rounds=4, seed=1, home=0.3, rho=-0.08):
     dfn = rng.normal(0, 0.3, n_teams)
     rows = []
     day = pd.Timestamp("2024-08-01", tz="UTC")
-    for r in range(n_rounds):
+    for _round in range(n_rounds):
         for i in range(n_teams):
             for j in range(n_teams):
                 if i == j:
@@ -23,8 +23,15 @@ def simulate_league(n_teams=10, n_rounds=4, seed=1, home=0.3, rho=-0.08):
                 lam, mu = np.exp(home + att[i] + dfn[j]), np.exp(att[j] + dfn[i])
                 g = dc.score_grid(lam, mu, rho, 10).ravel()
                 k = rng.choice(len(g), p=g)
-                rows.append({"kickoff_utc": day, "home_team_id": teams[i], "away_team_id": teams[j],
-                             "home_goals": k // 11, "away_goals": k % 11})
+                rows.append(
+                    {
+                        "kickoff_utc": day,
+                        "home_team_id": teams[i],
+                        "away_team_id": teams[j],
+                        "home_goals": k // 11,
+                        "away_goals": k % 11,
+                    }
+                )
                 day += pd.Timedelta(hours=7)
     return pd.DataFrame(rows), teams, att, dfn
 
@@ -44,7 +51,9 @@ def test_gradient_is_correct():
 
 
 def test_fit_recovers_home_advantage_and_ranks_teams():
-    cfg = load_settings().predictor.dixon_coles.model_copy(update={"time_decay_xi_per_day": 0.0, "ridge": 0.01})
+    cfg = load_settings().predictor.dixon_coles.model_copy(
+        update={"time_decay_xi_per_day": 0.0, "ridge": 0.01}
+    )
     df, teams, att, _ = simulate_league(n_rounds=6)
     f = dc.fit(df, df["kickoff_utc"].max() + pd.Timedelta(days=1), cfg)
     assert f.home == pytest.approx(0.3, abs=0.1)

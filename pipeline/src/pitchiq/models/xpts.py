@@ -35,7 +35,9 @@ def exact_outcome_probs(home_xg: np.ndarray, away_xg: np.ndarray) -> tuple[float
     return float(np.tril(joint, -1).sum()), float(np.trace(joint)), float(np.triu(joint, 1).sum())
 
 
-def simulate_match(home_xg: np.ndarray, away_xg: np.ndarray, n_sims: int, rng: np.random.Generator) -> tuple[float, float, float]:
+def simulate_match(
+    home_xg: np.ndarray, away_xg: np.ndarray, n_sims: int, rng: np.random.Generator
+) -> tuple[float, float, float]:
     """Monte Carlo P(home win), P(draw), P(away win)."""
     hg = (rng.random((n_sims, len(home_xg))) < home_xg).sum(axis=1)
     ag = (rng.random((n_sims, len(away_xg))) < away_xg).sum(axis=1)
@@ -48,6 +50,7 @@ def match_xpts(shots: pd.DataFrame, cfg: XPtsSettings) -> pd.DataFrame:
     Args:
         shots: Columns ``match_id, side, team_id, xg`` (own goals already excluded).
         cfg: Simulation settings.
+
     """
     rng = np.random.default_rng(cfg.random_seed)
     rows = []
@@ -55,7 +58,10 @@ def match_xpts(shots: pd.DataFrame, cfg: XPtsSettings) -> pd.DataFrame:
         h = g.loc[g["side"] == "h", "xg"].to_numpy(float)
         a = g.loc[g["side"] == "a", "xg"].to_numpy(float)
         ph, pd_, pa = simulate_match(h, a, cfg.n_sims, rng)
-        for side, w, l_, xg_for, xg_against in (("h", ph, pa, h.sum(), a.sum()), ("a", pa, ph, a.sum(), h.sum())):
+        for side, w, l_, xg_for, xg_against in (
+            ("h", ph, pa, h.sum(), a.sum()),
+            ("a", pa, ph, a.sum(), h.sum()),
+        ):
             rows.append(
                 {
                     "match_id": match_id,
@@ -117,7 +123,9 @@ def season_table(matches: pd.DataFrame, xpts: pd.DataFrame) -> pd.DataFrame:
     )
     t["gd"] = t["gf"] - t["ga"]
     t["pts_minus_xpts"] = t["pts"] - t["xpts"]
-    t = t.sort_values(["league_id", "season_id", "pts", "gd", "gf"], ascending=[True, True, False, False, False])
+    t = t.sort_values(
+        ["league_id", "season_id", "pts", "gd", "gf"], ascending=[True, True, False, False, False]
+    )
     t["position"] = t.groupby(["league_id", "season_id"]).cumcount() + 1
     t = t.sort_values(["league_id", "season_id", "xpts"], ascending=[True, True, False])
     t["xpts_position"] = t.groupby(["league_id", "season_id"]).cumcount() + 1
@@ -133,7 +141,10 @@ def run(store: Store, cfg: XPtsSettings, seasons: list[str]) -> pd.DataFrame:
     xp = match_xpts(shots, cfg)
     m = matches[matches["season_id"].isin(seasons)]
     side_team = pd.concat(
-        [m[["match_id"]].assign(side="h", team_id=m["home_team_id"]), m[["match_id"]].assign(side="a", team_id=m["away_team_id"])]
+        [
+            m[["match_id"]].assign(side="h", team_id=m["home_team_id"]),
+            m[["match_id"]].assign(side="a", team_id=m["away_team_id"]),
+        ]
     )
     xp = xp.merge(side_team, on=["match_id", "side"])
     store.write("xpts_match", xp)

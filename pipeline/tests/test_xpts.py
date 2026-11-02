@@ -22,14 +22,29 @@ def test_no_shots_is_a_certain_draw():
 def test_match_xpts_and_table():
     cfg = load_settings().xpts
     shots = pd.DataFrame(
-        {"match_id": [1, 1, 1], "side": ["h", "h", "a"], "team_id": ["a", "a", "b"], "xg": [0.9, 0.9, 0.05]}
+        {
+            "match_id": [1, 1, 1],
+            "side": ["h", "h", "a"],
+            "team_id": ["a", "a", "b"],
+            "xg": [0.9, 0.9, 0.05],
+        }
     )
     xp = match_xpts(shots, cfg)
     home = xp[xp["side"] == "h"].iloc[0]
-    assert home["xpts"] > 2.4 and home["p_win"] + home["p_draw"] + home["p_loss"] == pytest.approx(1)
+    assert home["xpts"] > 2.4 and home["p_win"] + home["p_draw"] + home["p_loss"] == pytest.approx(
+        1
+    )
     matches = pd.DataFrame(
-        {"match_id": [1], "league_id": ["ENG1"], "season_id": ["2526"], "home_team_id": ["a"],
-         "away_team_id": ["b"], "home_goals": [0], "away_goals": [1], "status": ["finished"]}
+        {
+            "match_id": [1],
+            "league_id": ["ENG1"],
+            "season_id": ["2526"],
+            "home_team_id": ["a"],
+            "away_team_id": ["b"],
+            "home_goals": [0],
+            "away_goals": [1],
+            "status": ["finished"],
+        }
     )
     t = season_table(matches, xp).set_index("team_id")
     assert t.loc["b", "pts"] == 3 and t.loc["b", "pts_minus_xpts"] > 2.5

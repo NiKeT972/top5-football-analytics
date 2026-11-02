@@ -45,7 +45,9 @@ def multi_log_loss(outcome: np.ndarray, probs: np.ndarray) -> float:
 
 def multi_brier(outcome: np.ndarray, probs: np.ndarray) -> float:
     """Multi-class Brier score (sum over classes, mean over matches; 0 is perfect, 2 worst)."""
-    return float(np.mean(np.sum((np.asarray(probs, float) - one_hot(outcome, probs.shape[1])) ** 2, axis=1)))
+    return float(
+        np.mean(np.sum((np.asarray(probs, float) - one_hot(outcome, probs.shape[1])) ** 2, axis=1))
+    )
 
 
 def rps(outcome: np.ndarray, probs: np.ndarray) -> float:
@@ -63,7 +65,11 @@ def calibration_table(y: np.ndarray, p: np.ndarray, n_bins: int) -> pd.DataFrame
     y = np.asarray(y, float)
     bins = np.clip((p * n_bins).astype(int), 0, n_bins - 1)
     df = pd.DataFrame({"bin": bins, "p": p, "y": y})
-    g = df.groupby("bin").agg(mean_pred=("p", "mean"), obs_freq=("y", "mean"), n=("y", "size")).reset_index()
+    g = (
+        df.groupby("bin")
+        .agg(mean_pred=("p", "mean"), obs_freq=("y", "mean"), n=("y", "size"))
+        .reset_index()
+    )
     return g
 
 
