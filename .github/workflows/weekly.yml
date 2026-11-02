@@ -1,0 +1,75 @@
+name: Weekly retrain
+
+# Mondays 06:47 IST (01:17 UTC): retrain the xG model, rerun the walk-forward backtest,
+# commit the evaluation reports, and republish.
+on:
+  schedule:
+    - cron: "17 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pitchiq-data
+  cancel-in-progress: false
+
+env:
+  PITCHIQ_DATA_DIR: ${{ github.workspace }}/pipeline/data
+  UV_SYSTEM_CERTS: "1"
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  SITE_URL: ${{ vars.SITE_URL }}
+  REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest   # no scraping here, so GitHub-hosted is always fine
+    timeout-minutes: 180
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --python 3.11
+      - name: Restore data store
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/data
+          key: pitchiq-data-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: pitchiq-data-v1-
+      - name: Validate stored data
+        run: uv run pitchiq validate
+      - name: Train + evaluate xG model
+        run: uv run pitchiq train-xg
+      - name: xPts with the new xG model
+        run: uv run pitchiq xpts
+      - name: Walk-forward backtest
+        run: uv run pitchiq backtest
+      - name: Similarity
+        run: uv run pitchiq similarity
+      - name: Publish
+        id: publish
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        run: uv run pitchiq publish
+      - name: Save data store
+        if: ${{ always() }}
+        uses: actions/cache/save@v4
+        with:
+          path: pipeline/data
+          key: pitchiq-data-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Commit reports
+        if: ${{ success() }}
+        working-directory: .
+        run: |
+          git config user.name "pitchiq-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pipeline/reports
+          if git diff --cached --quiet; then echo "no report changes"; exit 0; fi
+          git commit -m "reports: weekly model evaluation $(date -u +%Y-%m-%d) [skip ci]"
+          for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep $((i*5)); done
+      - name: Revalidate website
+        if: ${{ steps.publish.outcome == 'success' }}
+        run: uv run pitchiq revalidate

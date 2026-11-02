@@ -1,18 +1,16 @@
 name: Daily pipeline
 
 # 06:07 IST = 00:37 UTC (offset from the top of the hour, when GitHub queues are busiest).
+# Runner: Understat blocks cloud IP ranges, so scraping can run on a self-hosted runner.
+# Set the repository variable PITCHIQ_RUNNER to "self-hosted" (see docs/runbook.md); default is GitHub-hosted.
 on:
   schedule:
     - cron: "37 0 * * *"
   workflow_dispatch:
     inputs:
       max_match_requests:
-        description: "Cap on per-match Understat requests (0 = config default; use for backfill)"
+        description: "Cap on per-match Understat requests (0 = config default; raise for backfill)"
         default: "0"
-      skip_models:
-        description: "Only ingest + validate"
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -24,10 +22,13 @@ concurrency:
 env:
   PITCHIQ_DATA_DIR: ${{ github.workspace }}/pipeline/data
   UV_SYSTEM_CERTS: "1"
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  SITE_URL: ${{ vars.SITE_URL }}
+  REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
 
 jobs:
   pipeline:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.PITCHIQ_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 350
     defaults:
       run:
@@ -39,7 +40,7 @@ jobs:
           enable-cache: true
       - run: uv sync --locked --python 3.11
 
-      # The processed Parquet store lives in the Actions cache between runs (see docs/runbook.md).
+      # The processed Parquet store lives in the Actions cache between runs (docs/runbook.md).
       - name: Restore data store
         uses: actions/cache/restore@v4
         with:
@@ -56,12 +57,27 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run pitchiq validate
 
+      - name: FBref player info (weekly, soft source)
+        if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
+        continue-on-error: true
+        run: uv run pitchiq fbref
+
+      - name: Models (xG scoring, xPts, predictions, similarity)
+        id: models
+        if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
+        run: uv run pitchiq models
+
+      - name: Publish to Supabase
+        id: publish
+        if: ${{ !cancelled() && steps.models.outcome == 'success' && env.SUPABASE_DB_URL != '' }}
+        run: uv run pitchiq publish
+
       - name: Data profile
         if: ${{ !cancelled() }}
         run: uv run pitchiq profile
 
-      # Saved even when a step failed: ingestion only ever writes fully parsed data,
-      # so partial backfill progress is valid and must not be lost.
+      # Saved even when a step failed: ingestion only writes fully parsed data, so partial
+      # backfill progress is valid and must not be lost.
       - name: Save data store
         if: ${{ always() }}
         uses: actions/cache/save@v4
@@ -69,17 +85,24 @@ jobs:
           path: pipeline/data
           key: pitchiq-data-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Commit freshness file
+      # This daily commit also keeps GitHub from pausing scheduled workflows after 60 idle days.
+      - name: Commit freshness file and prediction ledger
         if: ${{ !cancelled() }}
         working-directory: .
         run: |
           git config user.name "pitchiq-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data-freshness.json
+          git add data-freshness.json ledger/predictions
           if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
           git commit -m "data: refresh $(date -u +%Y-%m-%dT%H:%MZ) [skip ci]"
           for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep $((i*5)); done
 
-      - name: Fail if ingestion or validation failed
-        if: ${{ steps.ingest.outcome == 'failure' || steps.validate.outcome == 'failure' }}
-        run: exit 1
+      - name: Revalidate website
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' }}
+        run: uv run pitchiq revalidate
+
+      - name: Fail the run if any required step failed (sends the failure email)
+        if: ${{ always() && (steps.ingest.outcome == 'failure' || steps.validate.outcome == 'failure' || steps.models.outcome == 'failure' || steps.publish.outcome == 'failure') }}
+        run: |
+          echo "::error::ingest=${{ steps.ingest.outcome }} validate=${{ steps.validate.outcome }} models=${{ steps.models.outcome }} publish=${{ steps.publish.outcome }}"
+          exit 1
