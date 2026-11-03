@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-11-02T20:15:52.262033+00:00",
-  "generated_display": "3 Nov 2026, 01:45 IST",
+  "generated_utc": "2026-11-03T07:12:38.693237+00:00",
+  "generated_display": "3 Nov 2026, 12:42 IST",
   "last_success_utc": null,
   "season": "2627",
   "leagues": {
@@ -34,30 +34,30 @@
     "understat_league": {
       "ok": false,
       "hard": true,
-      "message": "SourceError: [understat] https://understat.com/: ConnectTimeout: HTTPSConnectionPool(host='understat.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='understat.com', port=443) at 0x7f552c709050>, 'Connection to understat.com timed out. (connect timeout=30.0)'))",
+      "message": "SourceError: [understat] https://understat.com/: ConnectTimeout: HTTPSConnectionPool(host='understat.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='understat.com', port=443) at 0x7f7b72462310>, 'Connection to understat.com timed out. (connect timeout=30.0)'))",
       "rows": 0,
-      "seconds": 177.0
+      "seconds": 155.8
     },
     "understat_matches": {
       "ok": false,
       "hard": true,
-      "message": "KeyError: 'status'",
+      "message": "skipped: no Understat fixtures stored yet (team mapping needs them)",
       "rows": 0,
       "seconds": 0.0
     },
     "football_data": {
       "ok": false,
       "hard": true,
-      "message": "KeyError: \"None of ['league_id', 'season_id', 'home_team_id', 'away_team_id'] are in the columns\"",
+      "message": "skipped: no Understat fixtures stored yet (team mapping needs them)",
       "rows": 0,
       "seconds": 0.0
     },
     "clubelo": {
       "ok": false,
       "hard": true,
-      "message": "SourceError: [clubelo] http://api.clubelo.com/2014-11-01: HTTP 502",
+      "message": "skipped: no Understat fixtures stored yet (team mapping needs them)",
       "rows": 0,
-      "seconds": 44.7
+      "seconds": 0.0
     }
   }
 }
