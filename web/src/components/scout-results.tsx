@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { PercentileRadar } from "./charts/client";
+import { PercentileRadar } from "./charts/lazy";
 
 interface Result { player_id: number; player: string; team: string; league: string; age: number | null; minutes: number; similarity: number }
 

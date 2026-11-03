@@ -74,7 +74,7 @@ export function AskChat() {
     <div className="space-y-4">
       <form onSubmit={(e) => { e.preventDefault(); submit(question); }} className="flex gap-2">
         <input value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={300} placeholder="Ask about players, teams, xG, predictions…" aria-label="Question" className="flex-1 rounded-md border border-border bg-surface-1 px-3 py-2 text-fg" />
-        <button disabled={busy} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-60">{busy ? "Thinking…" : "Ask"}</button>
+        <button disabled={busy} className="rounded-md bg-[var(--btn)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60">{busy ? "Thinking…" : "Ask"}</button>
       </form>
       {history.length === 0 && (
         <div className="flex flex-wrap gap-2">

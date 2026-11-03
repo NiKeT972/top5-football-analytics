@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { XgTimeline } from "@/components/charts/client";
+import { XgTimeline } from "@/components/charts/lazy";
 import { ScoreGrid } from "@/components/charts/score-grid";
 import { ShotMap } from "@/components/charts/shot-map";
 import { ProbBar } from "@/components/prob-bar";

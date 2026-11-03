@@ -11,8 +11,10 @@
   --border: #e2e1dc;
   --text-primary: #0b0b0b;
   --text-secondary: #52514e;
-  --text-muted: #7a7973;
+  --text-muted: #6b6a65;
   --accent: #2a78d6;
+  --accent-strong: #1c5cab;
+  --btn: #1c5cab;
   /* Data colours (validated reference palette, light steps) */
   --home: #2a78d6;
   --away: #eb6834;
@@ -44,6 +46,8 @@
     --text-secondary: #c3c2b7;
     --text-muted: #8f8e86;
     --accent: #3987e5;
+    --accent-strong: #6da7ec;
+    --btn: #256abf;
     --home: #3987e5;
     --away: #d95926;
     --draw: #6f6e68;
@@ -71,6 +75,8 @@
   --text-secondary: #c3c2b7;
   --text-muted: #8f8e86;
   --accent: #3987e5;
+  --accent-strong: #6da7ec;
+  --btn: #256abf;
   --home: #3987e5;
   --away: #d95926;
   --draw: #6f6e68;
@@ -97,6 +103,7 @@
   --color-fg-2: var(--text-secondary);
   --color-fg-3: var(--text-muted);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
   --color-home: var(--home);
   --color-away: var(--away);
   --color-draw: var(--draw);

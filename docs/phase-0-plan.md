@@ -350,3 +350,14 @@ Growth: each new season adds ~45 MB, and the oldest season is pruned at rollover
 3. **Network allowlist for this cloud environment**, so I can build and test Phase 1 against real data. Hosts:
    `understat.com`, `www.football-data.co.uk`, `football-data.co.uk`, `api.clubelo.com`, `clubelo.com`, `fbref.com`, `raw.githubusercontent.com` (StatsBomb, optional), `huggingface.co` (if HF is chosen).
 4. **Default LLM for Ask:** Gemini (Flash, free tier) or Groq (Llama-class, free tier)? Both are free; Gemini also provides free embeddings for RAG, so it's my default.
+
+---
+
+## 10. Decisions taken (owner said "do everything", 2 Nov 2026)
+
+- **Name:** PitchIQ kept.
+- **History store:** GitHub Actions cache for the Parquet store (zero extra accounts). Optional durable mirror later.
+- **LLM:** Gemini Flash (free tier) by default; Groq/OpenAI via `LLM_PROVIDER`.
+- **Web data access:** supabase-js with the publishable key against documented `public` views (no direct Postgres from Vercel); RPCs for Scout and Ask.
+- **Ask retrieval:** lexical retrieval of worked examples plus the full view schema. pgvector is used for Scout similarity, where it pays off.
+- **Understat blocks cloud IPs:** daily scraping can run on a free self-hosted runner (`PITCHIQ_RUNNER`). The block is respected, not evaded. See `docs/runbook.md`.

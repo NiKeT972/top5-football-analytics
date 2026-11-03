@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalibrationChart } from "@/components/charts/client";
+import { CalibrationChart } from "@/components/charts/lazy";
 import { Card, EmptyState, PageHeader, Stat } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { getBacktest, getCalibration, getModelMeta, getTrackRecord, type TrackRow } from "@/lib/data";

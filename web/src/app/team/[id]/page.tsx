@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { MultiLine } from "@/components/charts/client";
+import { MultiLine } from "@/components/charts/lazy";
 import { Card, EmptyState, PageHeader, Stat } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { SITE } from "@/lib/config";

@@ -134,10 +134,20 @@ def test_anon_reads_views_but_cannot_write(published, db):
             db.execute("insert into public.leagues values ('XXX1', 'x', 'x', 2)")
 
 
-def test_anon_cannot_touch_core(published, db):
+def test_anon_cannot_write_core(published, db):
     with pytest.raises(psycopg.errors.InsufficientPrivilege), db.transaction():
         db.execute("set local role anon")
-        db.execute("select * from core.matches")
+        db.execute("delete from core.matches")
+
+
+def test_secrets_unreadable_even_via_ask(published, db):
+    for sql in ("select * from core.app_secrets", "select value from core.app_secrets"):
+        with pytest.raises(psycopg.Error), db.transaction():
+            db.execute("set local role anon")
+            db.execute(sql)
+    with pytest.raises(psycopg.Error), db.transaction():
+        db.execute("set local role anon")
+        db.execute("select public.ask_execute('select value from core.app_secrets')")
 
 
 def test_ask_execute_guardrails(published, db):
@@ -151,7 +161,8 @@ def test_ask_execute_guardrails(published, db):
         "drop table core.matches",
         "select 1; delete from core.matches",
         "select pg_sleep(10)",
-        "select * from core.matches",
+        "insert into core.leagues values ('X', 'x', 'x', 2)",
+        "select value from core.app_secrets",
     ):
         with pytest.raises(psycopg.Error), db.transaction():
             db.execute("set local role anon")
