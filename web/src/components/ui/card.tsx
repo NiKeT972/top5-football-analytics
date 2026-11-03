@@ -23,7 +23,7 @@ export function Card({ title, subtitle, action, children, className }: {
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "accent" | "good" | "critical" }) {
   const tones = {
     neutral: "bg-surface-2 text-fg-2",
-    accent: "bg-accent/15 text-accent",
+    accent: "bg-accent/15 text-accent-strong",
     good: "bg-good/15 text-good",
     critical: "bg-critical/15 text-critical",
   };

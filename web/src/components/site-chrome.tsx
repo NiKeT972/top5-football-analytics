@@ -8,8 +8,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-surface-1/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-        <Link href="/" className="text-lg font-bold tracking-tight text-fg">
-          Pitch<span className="text-accent">IQ</span>
+        <Link href="/" className="py-1.5 text-lg font-bold tracking-tight text-fg">
+          Pitch<span className="text-accent-strong">IQ</span>
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-2">
           {LEAGUES.map((l) => (

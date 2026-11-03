@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { EloChart, XgScatter } from "@/components/charts/client";
+import { EloChart, XgScatter } from "@/components/charts/lazy";
 import { Card, EmptyState, PageHeader } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { getEloHistory, getLeagueTable, getSeasons, type TableRow } from "@/lib/data";
@@ -90,7 +90,7 @@ async function LeagueContent({ params }: { params: PageProps<"/league/[slug]/[[.
       <PageHeader title={league.name} subtitle={`${seasonLabel(seasonId)} season · ${league.country}`}>
         <nav className="flex flex-wrap gap-1 text-sm">
           {seasons.map((s) => (
-            <Link key={s} href={`/league/${slug}/${s}`} className={`rounded-md px-2.5 py-1 ${s === seasonId ? "bg-accent text-white" : "bg-surface-2 text-fg-2 hover:text-fg"}`}>{seasonLabel(s)}</Link>
+            <Link key={s} href={`/league/${slug}/${s}`} className={`rounded-md px-2.5 py-1 ${s === seasonId ? "bg-[var(--btn)] text-white" : "bg-surface-2 text-fg-2 hover:text-fg"}`}>{seasonLabel(s)}</Link>
           ))}
         </nav>
       </PageHeader>

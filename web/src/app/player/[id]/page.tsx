@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { MultiLine, PercentileRadar } from "@/components/charts/client";
+import { MultiLine, PercentileRadar } from "@/components/charts/lazy";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { METRIC_LABEL, SITE } from "@/lib/config";
@@ -30,7 +30,7 @@ async function PlayerContent({ params }: { params: PageProps<"/player/[id]">["pa
   return (
     <div className="space-y-6">
       <PageHeader title={cur.player} subtitle={<>{cur.team && cur.team_id ? <Link href={`/team/${cur.team_id}`} className="hover:underline">{cur.team}</Link> : cur.team_names} · {leagueById(cur.league_id)?.name} · {cur.position_group ? POSITION_LABEL[cur.position_group] : "position unknown"}{cur.age != null && <> · age {Math.floor(cur.age)}</>}{cur.nation && <> · {cur.nation}</>}</>}>
-        <Link href={`/scout?player=${id}&season=${cur.season_id}`} className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white">Find similar players</Link>
+        <Link href={`/scout?player=${id}&season=${cur.season_id}`} className="rounded-md bg-[var(--btn)] px-3 py-1.5 text-sm font-medium text-white">Find similar players</Link>
       </PageHeader>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
         <Stat label="Minutes" value={cur.minutes} hint={cur.season_label} />

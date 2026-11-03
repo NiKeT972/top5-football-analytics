@@ -62,7 +62,7 @@ async function ScoutContent({ searchParams }: { searchParams: Promise<SP> }) {
           <label className="text-sm text-fg-2">Min minutes
             <input name="min_minutes" type="number" min={0} step={90} defaultValue={minMinutes} className="mt-1 w-full rounded-md border border-border bg-surface-1 px-3 py-2 text-fg" />
           </label>
-          <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white">Search</button>
+          <button className="rounded-md bg-[var(--btn)] px-4 py-2 text-sm font-medium text-white">Search</button>
         </form>
       </Card>
 

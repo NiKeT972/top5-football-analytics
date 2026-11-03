@@ -163,7 +163,7 @@ export function CalibrationChart({ rows, models }: { rows: { model: string; outc
       {outcomes.length > 1 && (
         <div className="mb-2 flex gap-1" role="tablist">
           {outcomes.map((o) => (
-            <button key={o} role="tab" aria-selected={o === outcome} onClick={() => setOutcome(o)} className={`rounded-md px-2.5 py-1 text-xs font-medium ${o === outcome ? "bg-accent text-white" : "bg-surface-2 text-fg-2"}`}>
+            <button key={o} role="tab" aria-selected={o === outcome} onClick={() => setOutcome(o)} className={`rounded-md px-2.5 py-1 text-xs font-medium ${o === outcome ? "bg-[var(--btn)] text-white" : "bg-surface-2 text-fg-2"}`}>
               P({o})
             </button>
           ))}

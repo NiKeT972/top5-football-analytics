@@ -27,7 +27,7 @@ describe.skipIf(!run)("Ask agent evaluation", () => {
       let note = "";
       try {
         const res = await ask(c.q, execute);
-        ok = "rows" in ref && isCorrect(ref.rows, res.rows);
+        ok = "rows" in ref && ref.rows !== undefined && isCorrect(ref.rows, res.rows);
         note = res.error ?? (res.sql ? "" : "no SQL");
       } catch (e) {
         note = e instanceof Error ? e.message.slice(0, 80) : "error";
