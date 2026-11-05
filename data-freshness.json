@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-11-04T06:54:52.120609+00:00",
-  "generated_display": "4 Nov 2026, 12:24 IST",
+  "generated_utc": "2026-11-05T07:15:22.797119+00:00",
+  "generated_display": "5 Nov 2026, 12:45 IST",
   "last_success_utc": null,
   "season": "2627",
   "leagues": {
@@ -36,7 +36,7 @@
       "hard": true,
       "message": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
       "rows": 0,
-      "seconds": 2.2
+      "seconds": 0.0
     },
     "understat_matches": {
       "ok": false,
