@@ -1,7 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["bom1"],
+  "regions": [
+    "bom1"
+  ],
   "functions": {
-    "src/app/api/ask/route.ts": { "maxDuration": 60 }
-  }
+    "src/app/api/ask/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
 }

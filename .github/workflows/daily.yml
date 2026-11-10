@@ -76,6 +76,13 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run pitchiq profile
 
+      # Free Supabase projects pause after 7 idle days; touch the DB every day even when
+      # ingestion failed upstream, so the site keeps serving the last good data.
+      - name: Database keep-alive
+        if: ${{ always() && env.SUPABASE_DB_URL != '' }}
+        continue-on-error: true
+        run: uv run python -c "import os, psycopg; psycopg.connect(os.environ['SUPABASE_DB_URL']).execute('select 1')"
+
       # Saved even when a step failed: ingestion only writes fully parsed data, so partial
       # backfill progress is valid and must not be lost.
       - name: Save data store
