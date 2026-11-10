@@ -1,6 +1,7 @@
 name: Diagnose data sources
 
-# Manual connectivity check from a GitHub runner to every data source (status, timing, IP family).
+# Manual connectivity check from a GitHub runner to every data source:
+# status, timing, and the start of each response body (to tell JSON from block pages).
 on:
   workflow_dispatch:
 
@@ -9,26 +10,24 @@ permissions:
 
 jobs:
   probe:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.PITCHIQ_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - name: Probe sources
         run: |
           UA="PitchIQ-portfolio-bot/0.1 (+https://github.com/NiKeT972/top5-football-analytics)"
-          for url in \
-            https://understat.com/ \
-            "https://understat.com/getLeagueData/EPL/2025" \
-            http://understat.com/ \
-            https://www.football-data.co.uk/mmz4281/2526/E0.csv \
-            https://www.football-data.co.uk/fixtures.csv \
-            http://api.clubelo.com/2025-11-01 \
-            http://api.clubelo.com/ManCity \
-            https://fbref.com/en/comps/9/Premier-League-Stats; do
-            for family in -4 -6; do
-              out=$(curl $family -s -o /dev/null -A "$UA" -H "X-Requested-With: XMLHttpRequest" -m 25 \
-                -w "%{http_code} connect=%{time_connect}s total=%{time_total}s ip=%{remote_ip}" "$url" 2>&1) || true
-              echo "$family $url -> $out"
-            done
-          done
-          echo "--- DNS"; getent ahosts understat.com | head -3 || true
+          JAR=$(mktemp)
+          probe() {
+            local url="$1"; shift
+            local body; body=$(mktemp)
+            local meta; meta=$(curl -4 -s -L -c "$JAR" -b "$JAR" -A "$UA" "$@" -m 25 -o "$body" \
+              -w "%{http_code} %{content_type} %{size_download}B %{time_total}s" "$url" 2>&1) || true
+            echo "=== $url -> $meta"
+            head -c 300 "$body" | tr '\n' ' '; echo; echo
+          }
+          probe https://understat.com/
+          probe https://understat.com/getLeagueData/EPL/2025 -H "X-Requested-With: XMLHttpRequest" -H "Referer: https://understat.com/league/EPL/2025"
+          probe https://understat.com/league/EPL/2025
+          probe https://www.football-data.co.uk/mmz4281/2526/E0.csv
+          probe http://api.clubelo.com/2025-11-01
           echo "--- runner egress IP"; curl -s -m 10 https://api.ipify.org || true
